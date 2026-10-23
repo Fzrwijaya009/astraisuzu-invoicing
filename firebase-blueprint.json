@@ -1,0 +1,315 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile containing authentication details, role (admin or owner), vendor affiliation, and approval status.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user ID matching Firebase Auth UID.",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the registered user.",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "description": "Registered email address.",
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "description": "User role: owner for Astra Isuzu Master System or admin for Vendor Administrator.",
+          "enum": ["owner", "admin"]
+        },
+        "jobTitle": {
+          "type": "string",
+          "description": "Job title or position of the user.",
+          "maxLength": 80
+        },
+        "vendor": {
+          "type": "string",
+          "description": "Company or vendor organization.",
+          "enum": ["PT. Jaya Kreasi Indonesia", "PT. Terang Part Indonesia", "Astra Isuzu (Master)"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Approval status of the user account. Must be Approved by Owner to access full features.",
+          "enum": ["Pending", "Approved", "Rejected"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of user creation.",
+          "maxLength": 40
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last profile update.",
+          "maxLength": 40
+        }
+      },
+      "required": ["id", "name", "email", "role", "jobTitle", "vendor", "status"]
+    },
+    "GoodReceipt": {
+      "title": "GoodReceipt",
+      "description": "Good Receipt record representing accessories parts received and officially verified by Astra Isuzu.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique Good Receipt document ID.",
+          "maxLength": 128
+        },
+        "noPo": {
+          "type": "string",
+          "description": "Purchase Order reference number (No PO).",
+          "maxLength": 60
+        },
+        "serialNumber": {
+          "type": "string",
+          "description": "Vehicle chassis or serial number (Serial number).",
+          "maxLength": 60
+        },
+        "tipe": {
+          "type": "string",
+          "description": "Isuzu vehicle type/variant (Tipe).",
+          "maxLength": 60
+        },
+        "material": {
+          "type": "string",
+          "description": "Accessory part number (Material).",
+          "maxLength": 60
+        },
+        "description": {
+          "type": "string",
+          "description": "Material accessory description (Description).",
+          "maxLength": 200
+        },
+        "sLoc": {
+          "type": "string",
+          "description": "Storage Location (SLoc, e.g. 2000).",
+          "maxLength": 30
+        },
+        "qty": {
+          "type": "number",
+          "description": "Quantity received (Qty)."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Total value / line amount in IDR (Amount)."
+        },
+        "plan": {
+          "type": "string",
+          "description": "Plant code (Plan, e.g. I000).",
+          "maxLength": 30
+        },
+        "noGr": {
+          "type": "string",
+          "description": "Good Receipt / Material document number (No GR/GL).",
+          "maxLength": 60
+        },
+        "item": {
+          "type": "string",
+          "description": "Line item number (Item).",
+          "maxLength": 20
+        },
+        "assignment": {
+          "type": "string",
+          "description": "Account assignment code (A).",
+          "maxLength": 20
+        },
+        "grDate": {
+          "type": "string",
+          "description": "Good Receipt posting date (GR/GL Date).",
+          "maxLength": 30
+        },
+        "poDate": {
+          "type": "string",
+          "description": "Purchase order issue date (PO Date).",
+          "maxLength": 30
+        },
+        "vendor": {
+          "type": "string",
+          "description": "Vendor name that supplied the accessory part.",
+          "enum": ["PT. Jaya Kreasi Indonesia", "PT. Terang Part Indonesia"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Billing status: Outstanding (un-invoiced) or Invoiced.",
+          "enum": ["Outstanding", "Invoiced"]
+        },
+        "invoiceId": {
+          "type": "string",
+          "description": "Associated invoice ID once invoiced.",
+          "maxLength": 128
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "Associated invoice reference code once invoiced.",
+          "maxLength": 80
+        },
+        "uploadedBy": {
+          "type": "string",
+          "description": "UID or email of the Astra Isuzu Owner who uploaded the master data.",
+          "maxLength": 128
+        },
+        "uploadedAt": {
+          "type": "string",
+          "description": "Timestamp of upload.",
+          "maxLength": 40
+        }
+      },
+      "required": ["noPo", "vendor", "material", "description", "qty", "amount", "noGr", "status"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Vendor billing invoice grouping multiple Good Receipts for payment review and approval.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Invoice document ID.",
+          "maxLength": 128
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "Nomor Unik Tagihan / unique reference code.",
+          "maxLength": 80
+        },
+        "vendor": {
+          "type": "string",
+          "description": "Vendor submitting the invoice.",
+          "enum": ["PT. Jaya Kreasi Indonesia", "PT. Terang Part Indonesia"]
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Cumulative total price of all billed Good Receipt items."
+        },
+        "itemCount": {
+          "type": "number",
+          "description": "Number of billed items in this invoice."
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status of the invoice: Open or Pembayaran Dijadwalkan.",
+          "enum": ["Open", "Pembayaran Dijadwalkan", "Ditolak"]
+        },
+        "createdByUid": {
+          "type": "string",
+          "description": "UID of the vendor admin who created the invoice.",
+          "maxLength": 128
+        },
+        "createdByName": {
+          "type": "string",
+          "description": "Name of the creator.",
+          "maxLength": 120
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp.",
+          "maxLength": 40
+        },
+        "scheduledPaymentDate": {
+          "type": "string",
+          "description": "Target payment date set upon approval.",
+          "maxLength": 30
+        },
+        "approvedBy": {
+          "type": "string",
+          "description": "Owner email / UID who approved the invoice.",
+          "maxLength": 120
+        },
+        "approvedAt": {
+          "type": "string",
+          "description": "Timestamp when approved.",
+          "maxLength": 40
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes or remarks regarding the invoice.",
+          "maxLength": 500
+        }
+      },
+      "required": ["invoiceNumber", "vendor", "totalAmount", "itemCount", "status", "createdByUid"]
+    },
+    "InvoiceItem": {
+      "title": "InvoiceItem",
+      "description": "Line item detail in an invoice referencing a specific Good Receipt item.",
+      "type": "object",
+      "properties": {
+        "goodReceiptId": {
+          "type": "string",
+          "description": "Foreign key to original Good Receipt.",
+          "maxLength": 128
+        },
+        "grNumber": {
+          "type": "string",
+          "description": "Good receipt number.",
+          "maxLength": 60
+        },
+        "poNumber": {
+          "type": "string",
+          "description": "Purchase order number.",
+          "maxLength": 60
+        },
+        "materialNumber": {
+          "type": "string",
+          "description": "Material accessory part number.",
+          "maxLength": 60
+        },
+        "materialDescription": {
+          "type": "string",
+          "description": "Description of material accessory.",
+          "maxLength": 200
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity billed."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement.",
+          "maxLength": 20
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Unit price."
+        },
+        "totalPrice": {
+          "type": "number",
+          "description": "Total line price."
+        }
+      },
+      "required": ["goodReceiptId", "grNumber", "materialNumber", "quantity", "unitPrice", "totalPrice"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user profiles with role (owner or admin), vendor assignment, and pending/approved status."
+    },
+    "/goodReceipts/{grId}": {
+      "schema": {
+        "$ref": "#/entities/GoodReceipt"
+      },
+      "description": "Stores Good Receipt items uploaded by Owner, segregated per vendor and tracked for billing."
+    },
+    "/invoices/{invoiceId}": {
+      "schema": {
+        "$ref": "#/entities/Invoice"
+      },
+      "description": "Stores invoices generated by Vendor Admins with status Open, reviewed and approved by Owner to Pembayaran Dijadwalkan."
+    },
+    "/invoices/{invoiceId}/items/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/InvoiceItem"
+      },
+      "description": "Stores individual line items within an invoice for itemized auditing and reference."
+    }
+  }
+}

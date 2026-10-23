@@ -1,0 +1,6 @@
+{
+  "name": "Monitoring Tagihan Vendor Aksesoris Astra Isuzu",
+  "description": "Sistem Dashboard Terintegrasi Monitoring Tagihan Vendor Aksesoris Astra Isuzu dengan Real-time Firestore, RBAC Approval, dan Otomasi Invoice Good Receipt.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

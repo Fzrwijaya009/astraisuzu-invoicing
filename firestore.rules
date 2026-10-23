@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBootstrappedOwner() {
+      return isSignedIn() && (
+        request.auth.token.email == 'fajrisani12@gmail.com' ||
+        request.auth.token.email == 'owner@astraisuzu.co.id'
+      );
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isOwner() {
+      return isBootstrappedOwner() || (
+        isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'owner' &&
+        getUserData().status == 'Approved'
+      );
+    }
+
+    function isApprovedAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'admin' &&
+        getUserData().status == 'Approved';
+    }
+
+    function getUserVendor() {
+      return getUserData().vendor;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // ----------------------------------------------------
+    // USERS COLLECTION
+    // ----------------------------------------------------
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isOwner());
+      allow list: if isOwner();
+
+      // User registration: can only create own record
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        // Bootstrapped owner can register directly as approved owner
+        (isBootstrappedOwner() && request.resource.data.role == 'owner' && request.resource.data.status == 'Approved') ||
+        // Other users register as Pending
+        (request.resource.data.status == 'Pending')
+      );
+
+      // Updates: Owner can change role and approval status; Users can update basic profile
+      allow update: if isOwner() || (
+        isSignedIn() && request.auth.uid == userId &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.vendor == resource.data.vendor
+      );
+
+      allow delete: if isOwner();
+    }
+
+    // ----------------------------------------------------
+    // GOOD RECEIPTS COLLECTION
+    // ----------------------------------------------------
+    match /goodReceipts/{grId} {
+      // Owner can get/list all
+      // Admin can only get/list GR items belonging to their vendor
+      allow get: if isOwner() || (isApprovedAdmin() && resource.data.vendor == getUserVendor());
+      allow list: if isOwner() || (isApprovedAdmin() && resource.data.vendor == getUserVendor());
+
+      // Master Upload: Only Owner can create or delete GR records
+      allow create: if isOwner();
+      allow delete: if isOwner();
+
+      // Update:
+      // 1. Owner can update any GR record
+      // 2. Approved Admin can update status to 'Invoiced' with invoiceId/invoiceNumber for their vendor
+      allow update: if isOwner() || (
+        isApprovedAdmin() &&
+        resource.data.vendor == getUserVendor() &&
+        request.resource.data.vendor == resource.data.vendor &&
+        request.resource.data.status == 'Invoiced' &&
+        resource.data.status == 'Outstanding' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'invoiceId', 'invoiceNumber', 'invoicedAt'])
+      );
+    }
+
+    // ----------------------------------------------------
+    // INVOICES COLLECTION
+    // ----------------------------------------------------
+    match /invoices/{invoiceId} {
+      // Owner can view all invoices
+      // Admin can view invoices belonging to their vendor
+      allow get: if isOwner() || (isApprovedAdmin() && resource.data.vendor == getUserVendor());
+      allow list: if isOwner() || (isApprovedAdmin() && resource.data.vendor == getUserVendor());
+
+      // Create: Approved Admin can create invoice for their vendor with initial status 'Open'
+      allow create: if (
+        isApprovedAdmin() &&
+        request.resource.data.vendor == getUserVendor() &&
+        request.resource.data.status == 'Open' &&
+        request.resource.data.createdByUid == request.auth.uid
+      ) || isOwner();
+
+      // Update:
+      // 1. Owner can review & update status (e.g. to 'Pembayaran Dijadwalkan' or 'Ditolak')
+      allow update: if isOwner();
+
+      // Delete: Owner only
+      allow delete: if isOwner();
+
+      // Subcollection for invoice line items
+      match /items/{itemId} {
+        allow read: if isOwner() || (isApprovedAdmin() && get(/databases/$(database)/documents/invoices/$(invoiceId)).data.vendor == getUserVendor());
+        allow create, update, delete: if isOwner() || (isApprovedAdmin() && get(/databases/$(database)/documents/invoices/$(invoiceId)).data.vendor == getUserVendor());
+      }
+    }
+  }
+}
