@@ -1,12 +1,14 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// CRITICAL: Initialize Firestore with firestoreDatabaseId from firebase-applet-config.json
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// CRITICAL: Initialize Firestore with firestoreDatabaseId from firebase-applet-config.json and ignoreUndefinedProperties
+export const db = initializeFirestore(app, {
+  ignoreUndefinedProperties: true,
+}, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 

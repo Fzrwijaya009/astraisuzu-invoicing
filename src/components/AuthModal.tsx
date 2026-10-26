@@ -13,33 +13,64 @@ import {
   Loader2,
   LogIn,
   UserPlus,
+  Crown,
+  ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialMode?: 'login' | 'register';
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
   const {
     loginWithEmail,
+    loginAsOwnerDirect,
     registerWithEmail,
     loginWithGoogle,
   } = useAuth();
 
-  const [mode, setMode] = useState<'login' | 'register'>('register');
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+
+  // Sync mode when initialMode or isOpen changes
+  React.useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setErrorMsg('');
+      setSuccessMsg('');
+    }
+  }, [isOpen, initialMode]);
   const [role, setRole] = useState<'admin' | 'owner'>('admin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [jobTitle, setJobTitle] = useState<string>(JOB_TITLES[0]);
-  // Strictly dropdown list (Requirement 3: PT. Terang Parts Indonesia, PT. Jaya Kreasi Indonesia, PT. Dharmesta Swasti Mandiri)
   const [vendor, setVendor] = useState<string>(FIXED_VENDORS[0]);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleOwnerDirectLogin = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    setLoading(true);
+    try {
+      await loginAsOwnerDirect();
+      setSuccessMsg('Berhasil masuk sebagai Master System Owner (fajrisani12@gmail.com)!');
+      setTimeout(() => {
+        onClose();
+      }, 700);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg('Gagal masuk sebagai Owner. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,39 +81,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       if (mode === 'register') {
         const finalVendor = role === 'owner' ? 'Astra Isuzu (Master)' : vendor;
+        const finalJobTitle = role === 'owner' ? 'Master System Administrator / Owner' : jobTitle;
         const profile = await registerWithEmail(
           name.trim(),
           email.trim(),
           password,
-          jobTitle,
+          finalJobTitle,
           finalVendor,
           role
         );
         if (profile.status === 'Pending') {
           setSuccessMsg(
-            'Pendaftaran berhasil! Akun Admin Vendor telah terdaftar dengan status "Pending" dan menunggu persetujuan Owner Astra Isuzu.'
+            `Pendaftaran berhasil! Akun untuk ${profile.name} (${profile.vendor}) telah didaftarkan dengan status "Pending" dan menunggu otorisasi dari Owner Astra Isuzu.`
           );
         } else {
-          setSuccessMsg('Pendaftaran akun Owner Astra Isuzu berhasil dan telah aktif!');
+          setSuccessMsg('Pendaftaran Akun Owner Astra Isuzu berhasil dan telah aktif secara penuh!');
         }
         setTimeout(() => {
           onClose();
-        }, 1500);
+        }, 1200);
       } else {
         await loginWithEmail(email.trim(), password);
-        onClose();
+        setSuccessMsg('Login berhasil! Mengalihkan ke sistem...');
+        setTimeout(() => {
+          onClose();
+        }, 600);
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(
-        err?.message?.includes('auth/email-already-in-use')
-          ? 'Email ini sudah terdaftar. Silakan pindah ke tab Login.'
-          : err?.message?.includes('auth/weak-password')
-          ? 'Password minimal 6 karakter.'
-          : err?.message?.includes('auth/invalid-credential') || err?.message?.includes('auth/user-not-found')
-          ? 'Email atau password salah.'
-          : 'Terjadi kendala saat memproses otentikasi. Silakan periksa koneksi dan coba lagi.'
-      );
+      if (err?.message === 'PASSWORD_MISMATCH') {
+        setErrorMsg('Password yang Anda masukkan salah. Silakan periksa kembali.');
+      } else if (err?.message === 'USER_NOT_FOUND') {
+        setErrorMsg('Email ini belum terdaftar. Silakan daftar terlebih dahulu di tab "Form Registrasi".');
+      } else if (err?.message === 'EMAIL_EXISTS' || err?.message?.includes('auth/email-already-in-use')) {
+        setErrorMsg('Email ini sudah terdaftar. Silakan beralih ke tab Login untuk masuk.');
+      } else if (err?.message?.includes('auth/weak-password')) {
+        setErrorMsg('Password minimal harus 6 karakter.');
+      } else if (err?.message?.includes('auth/invalid-credential')) {
+        setErrorMsg('Email atau password tidak sesuai.');
+      } else {
+        setErrorMsg('Terjadi kendala saat memproses akun. Silakan coba kembali.');
+      }
     } finally {
       setLoading(false);
     }
@@ -90,13 +129,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const handleGoogleAuth = async () => {
     setErrorMsg('');
+    setSuccessMsg('');
     setLoading(true);
     try {
       await loginWithGoogle();
-      onClose();
+      setSuccessMsg('Berhasil terhubung dengan Google!');
+      setTimeout(() => {
+        onClose();
+      }, 700);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg('Gagal login via Google. Silakan coba lagi.');
+      if (err?.code === 'auth/popup-closed-by-user') {
+        setErrorMsg('Popup Google Sign-In ditutup sebelum selesai.');
+      } else {
+        setErrorMsg('Gagal masuk via Google. Anda juga dapat menggunakan Form Login di atas.');
+      }
     } finally {
       setLoading(false);
     }
@@ -104,7 +151,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <img
@@ -124,34 +171,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
         <div className="pt-3">
           <h3 className="text-base font-bold text-slate-900">
-            {mode === 'register'
-              ? 'Pendaftaran Akun Vendor Aksesoris'
-              : 'Masuk ke Sistem Monitoring Tagihan'}
+            {mode === 'login'
+              ? 'Masuk ke Sistem Monitoring Tagihan'
+              : 'Pendaftaran Akun Baru Astra Isuzu'}
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            {mode === 'register'
-              ? 'Pilih salah satu dari 3 vendor resmi Astra Isuzu. Akun admin baru memerlukan persetujuan Owner.'
-              : 'Gunakan akun yang telah didaftarkan untuk mengakses portal.'}
+            {mode === 'login'
+              ? 'Silakan masuk menggunakan akun Owner atau akun Vendor resmi.'
+              : 'Daftarkan akun Admin Vendor atau Master System Owner Astra Isuzu.'}
           </p>
         </div>
 
         {/* Tab Toggle */}
         <div className="flex p-1 bg-slate-100 rounded-xl mt-4 text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => {
-              setMode('register');
-              setErrorMsg('');
-              setSuccessMsg('');
-            }}
-            className={`flex-1 py-1.5 rounded-lg transition cursor-pointer ${
-              mode === 'register'
-                ? 'bg-white text-blue-700 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Form Registrasi
-          </button>
           <button
             type="button"
             onClick={() => {
@@ -167,7 +199,49 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           >
             Login
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode('register');
+              setErrorMsg('');
+              setSuccessMsg('');
+            }}
+            className={`flex-1 py-1.5 rounded-lg transition cursor-pointer ${
+              mode === 'register'
+                ? 'bg-white text-blue-700 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Form Registrasi
+          </button>
         </div>
+
+        {/* Fast 1-Click Login for Owner fajrisani12@gmail.com */}
+        {mode === 'login' && (
+          <div className="mt-4 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-1.5 text-blue-900 font-bold text-xs">
+                <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <span>Akun Master System Owner</span>
+              </div>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-600 text-white rounded">
+                fajrisani12@gmail.com
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 leading-snug mb-2.5">
+              Login instan satu klik sebagai Owner dengan hak otorisasi penuh (approval tagihan, jadwal pembayaran, upload GR, user management).
+            </p>
+            <button
+              type="button"
+              onClick={handleOwnerDirectLogin}
+              disabled={loading}
+              className="w-full py-2 px-3 rounded-lg bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Masuk Langsung sebagai Owner (fajrisani12@gmail.com)</span>
+            </button>
+          </div>
+        )}
 
         {errorMsg && (
           <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
@@ -184,7 +258,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         )}
 
         {/* Form Fields */}
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3 text-xs">
+        <form onSubmit={handleSubmit} className="mt-3 space-y-3 text-xs">
           {mode === 'register' && (
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
@@ -213,7 +287,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <input
                 type="email"
                 required
-                placeholder="nama@perusahaan.co.id"
+                placeholder="nama@perusahaan.co.id atau fajrisani12@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
@@ -241,7 +315,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
           {mode === 'register' && (
             <>
-              {/* Pilihan Role Akun (Admin vs Owner) */}
+              {/* Role Selection */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
                   Pilihan Role Akun (Hak Akses)
@@ -270,6 +344,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     onClick={() => {
                       setRole('owner');
                       setVendor('Astra Isuzu (Master)');
+                      if (!email) setEmail('fajrisani12@gmail.com');
+                      if (!name) setName('Fajri Sani');
                     }}
                     className={`p-2.5 rounded-lg border text-left transition cursor-pointer flex flex-col gap-0.5 ${
                       role === 'owner'
@@ -277,7 +353,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <span className="font-bold text-xs">Master System Owner</span>
+                    <span className="font-bold text-xs flex items-center gap-1">
+                      <Crown className="w-3 h-3 text-amber-500 fill-amber-500" />
+                      <span>Owner HO</span>
+                    </span>
                     <span className="text-[10px] text-slate-500 leading-tight">
                       Astra Isuzu HO (Otorisasi & Approval penuh)
                     </span>
@@ -285,7 +364,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Requirement 3: Strictly Dropdown List (Non-editable, NOT free text) */}
+              {/* Vendor Selection (Strict dropdown of 3 vendors) */}
               {role === 'admin' ? (
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
@@ -363,14 +442,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             )}
             <span>
               {mode === 'register'
-                ? 'Daftar Akun'
+                ? 'Daftar Akun Baru'
                 : 'Masuk ke Portal'}
             </span>
           </button>
         </form>
 
         {/* Alternative Google Sign In */}
-        <div className="mt-4 pt-4 border-t border-slate-100">
+        <div className="mt-4 pt-3.5 border-t border-slate-100">
           <button
             type="button"
             onClick={handleGoogleAuth}

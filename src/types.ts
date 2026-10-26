@@ -31,6 +31,7 @@ export interface UserProfile {
   updatedAt?: string;
   avatarUrl?: string;
   companyLogoUrl?: string;
+  password?: string;
 }
 
 export type GoodReceiptStatus = 'Outstanding' | 'Invoiced';
