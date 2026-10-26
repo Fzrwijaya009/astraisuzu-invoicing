@@ -30,12 +30,10 @@ import {
   LogIn,
   UserPlus,
   FileSpreadsheet,
-  Crown,
-  Sparkles,
 } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { userProfile, loading, loginAsOwnerDirect } = useAuth();
+  const { userProfile, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   
   const [goodReceipts, setGoodReceipts] = useState<GoodReceipt[]>([]);
@@ -369,47 +367,31 @@ const MainLayout: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthModalMode('login');
-                    setIsAuthModalOpen(true);
-                  }}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>Masuk (Login Akun)</span>
-                </button>
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthModalMode('login');
+                  setIsAuthModalOpen(true);
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Masuk (Login Akun)</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthModalMode('register');
-                    setIsAuthModalOpen(true);
-                  }}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-blue-300 bg-blue-50/60 hover:bg-blue-100 text-blue-800 font-bold text-xs transition cursor-pointer"
-                >
-                  <UserPlus className="w-4 h-4 text-blue-600" />
-                  <span>Daftar Akun Baru (Vendor / Owner)</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Direct Owner Login Banner */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => loginAsOwnerDirect()}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition cursor-pointer"
-                  title="Masuk langsung sebagai Master System Owner (fajrisani12@gmail.com)"
-                >
-                  <Crown className="w-4 h-4 text-amber-200 fill-amber-200" />
-                  <span>Masuk Cepat sebagai Owner (fajrisani12@gmail.com)</span>
-                  <Sparkles className="w-3.5 h-3.5 text-amber-200" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthModalMode('register');
+                  setIsAuthModalOpen(true);
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-blue-300 bg-blue-50/60 hover:bg-blue-100 text-blue-800 font-bold text-xs transition cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4 text-blue-600" />
+                <span>Daftar Akun Baru (Vendor / Owner)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>

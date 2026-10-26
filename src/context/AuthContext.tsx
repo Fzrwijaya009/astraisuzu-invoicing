@@ -22,25 +22,12 @@ import { UserProfile, UserRole, FIXED_VENDORS } from '../types';
 const SESSION_STORAGE_KEY = 'astraisuzu_user_session';
 const LOCAL_USERS_KEY = 'astraisuzu_registered_users';
 
-export const OWNER_DEFAULT_PROFILE: UserProfile = {
-  id: 'owner_fajrisani12',
-  name: 'Fajri Sani (Owner Astra Isuzu)',
-  email: 'fajrisani12@gmail.com',
-  role: 'owner',
-  jobTitle: 'Master System Administrator / Owner',
-  vendor: 'Astra Isuzu (Master)',
-  status: 'Approved',
-  createdAt: '2026-01-01T00:00:00.000Z',
-  companyLogoUrl: '/assets/aistudio/Astra_Isuzu_Logo_Vector.svg__220102f2.png',
-};
-
 interface AuthContextType {
   currentUser: FirebaseUser | null;
   userProfile: UserProfile | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<UserProfile>;
-  loginAsOwnerDirect: () => Promise<UserProfile>;
   registerWithEmail: (
     name: string,
     email: string,
@@ -144,21 +131,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // Direct login as Owner fajrisani12@gmail.com
-  const loginAsOwnerDirect = async (): Promise<UserProfile> => {
-    const owner = { ...OWNER_DEFAULT_PROFILE };
-    try {
-      // Persist to Firestore
-      const userRef = doc(db, 'users', owner.id);
-      await setDoc(userRef, owner, { merge: true });
-    } catch (err) {
-      console.warn('Direct owner firestore sync warning:', err);
-    }
-    saveLocalUser(owner);
-    setUserProfile(owner);
-    return owner;
-  };
-
   const loginWithGoogle = async () => {
     try {
       const res = await signInWithPopup(auth, googleProvider);
@@ -210,16 +182,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithEmail = async (emailInput: string, pass: string): Promise<UserProfile> => {
     const cleanEmail = emailInput.trim().toLowerCase();
-    const isOwnerEmail =
-      cleanEmail === 'fajrisani12@gmail.com' ||
-      cleanEmail === 'owner@astraisuzu.co.id';
 
-    // Fast-path: Owner fajrisani12@gmail.com can log in directly
-    if (isOwnerEmail) {
-      return await loginAsOwnerDirect();
-    }
-
-    // Attempt Firebase Auth sign in first
+    // 1. Attempt Firebase Auth sign in if enabled
     try {
       const cred = await signInWithEmailAndPassword(auth, cleanEmail, pass);
       const userRef = doc(db, 'users', cred.user.uid);
@@ -231,11 +195,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return profile;
       }
     } catch (firebaseErr: any) {
-      console.warn('Firebase signInWithEmailAndPassword note:', firebaseErr?.code || firebaseErr?.message);
-      // If auth provider is disabled or user not found in Firebase Auth, check Firestore or local registered accounts
+      // If auth provider is disabled or user not found in Firebase Auth, proceed to Firestore verification
+      console.warn('Firebase signIn note:', firebaseErr?.code || firebaseErr?.message);
     }
 
-    // Check Firestore users collection by email
+    // 2. Check Firestore users collection by email (all users must have registered and set a password)
     try {
       const q = query(collection(db, 'users'), where('email', '==', cleanEmail));
       const snap = await getDocs(q);
@@ -254,7 +218,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Firestore query error:', fsErr);
     }
 
-    // Check local registered users cache
+    // 3. Check local registered users cache
     const localUsers = getLocalUsers();
     const foundLocal = localUsers.find((u) => u.email.toLowerCase() === cleanEmail);
     if (foundLocal) {
@@ -271,6 +235,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return foundLocal;
     }
 
+    // If account was never registered, must register first
     throw new Error('USER_NOT_FOUND');
   };
 
@@ -298,11 +263,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const q = query(collection(db, 'users'), where('email', '==', cleanEmail));
       const existingSnap = await getDocs(q);
       if (!existingSnap.empty) {
-        const existingData = existingSnap.docs[0].data() as UserProfile;
-        if (isOwnerEmail) {
-          setUserProfile(existingData);
-          return existingData;
-        }
         throw new Error('EMAIL_EXISTS');
       }
     } catch (checkErr: any) {
@@ -318,7 +278,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       uid = userCredential.user.uid;
     } catch (firebaseErr: any) {
       console.warn('Firebase createUser note:', firebaseErr?.code || firebaseErr?.message);
-      // If auth/operation-not-allowed or auth/email-already-in-use, proceed with resilient app-level UID
     }
 
     const newProfile: UserProfile = {
@@ -399,7 +358,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         loginWithGoogle,
         loginWithEmail,
-        loginAsOwnerDirect,
         registerWithEmail,
         logout,
         updateUserStatus,

@@ -14,8 +14,6 @@ import {
   LogIn,
   UserPlus,
   Crown,
-  ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -27,7 +25,6 @@ interface AuthModalProps {
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
   const {
     loginWithEmail,
-    loginAsOwnerDirect,
     registerWithEmail,
     loginWithGoogle,
   } = useAuth();
@@ -42,6 +39,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
       setSuccessMsg('');
     }
   }, [isOpen, initialMode]);
+
   const [role, setRole] = useState<'admin' | 'owner'>('admin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -53,24 +51,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
-
-  const handleOwnerDirectLogin = async () => {
-    setErrorMsg('');
-    setSuccessMsg('');
-    setLoading(true);
-    try {
-      await loginAsOwnerDirect();
-      setSuccessMsg('Berhasil masuk sebagai Master System Owner (fajrisani12@gmail.com)!');
-      setTimeout(() => {
-        onClose();
-      }, 700);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg('Gagal masuk sebagai Owner. Silakan coba lagi.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +72,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
         );
         if (profile.status === 'Pending') {
           setSuccessMsg(
-            `Pendaftaran berhasil! Akun untuk ${profile.name} (${profile.vendor}) telah didaftarkan dengan status "Pending" dan menunggu otorisasi dari Owner Astra Isuzu.`
+            `Pendaftaran berhasil! Akun ${profile.name} (${profile.vendor}) telah didaftarkan dengan status "Pending" dan menunggu otorisasi dari Owner Astra Isuzu.`
           );
         } else {
           setSuccessMsg('Pendaftaran Akun Owner Astra Isuzu berhasil dan telah aktif secara penuh!');
@@ -112,7 +92,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
       if (err?.message === 'PASSWORD_MISMATCH') {
         setErrorMsg('Password yang Anda masukkan salah. Silakan periksa kembali.');
       } else if (err?.message === 'USER_NOT_FOUND') {
-        setErrorMsg('Email ini belum terdaftar. Silakan daftar terlebih dahulu di tab "Form Registrasi".');
+        setErrorMsg('Email ini belum terdaftar. Silakan lakukan pendaftaran terlebih dahulu di tab "Form Registrasi".');
       } else if (err?.message === 'EMAIL_EXISTS' || err?.message?.includes('auth/email-already-in-use')) {
         setErrorMsg('Email ini sudah terdaftar. Silakan beralih ke tab Login untuk masuk.');
       } else if (err?.message?.includes('auth/weak-password')) {
@@ -177,7 +157,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
             {mode === 'login'
-              ? 'Silakan masuk menggunakan akun Owner atau akun Vendor resmi.'
+              ? 'Silakan masuk menggunakan email dan password terdaftar.'
               : 'Daftarkan akun Admin Vendor atau Master System Owner Astra Isuzu.'}
           </p>
         </div>
@@ -216,33 +196,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
           </button>
         </div>
 
-        {/* Fast 1-Click Login for Owner fajrisani12@gmail.com */}
-        {mode === 'login' && (
-          <div className="mt-4 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-1.5 text-blue-900 font-bold text-xs">
-                <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
-                <span>Akun Master System Owner</span>
-              </div>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-600 text-white rounded">
-                fajrisani12@gmail.com
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-snug mb-2.5">
-              Login instan satu klik sebagai Owner dengan hak otorisasi penuh (approval tagihan, jadwal pembayaran, upload GR, user management).
-            </p>
-            <button
-              type="button"
-              onClick={handleOwnerDirectLogin}
-              disabled={loading}
-              className="w-full py-2 px-3 rounded-lg bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Masuk Langsung sebagai Owner (fajrisani12@gmail.com)</span>
-            </button>
-          </div>
-        )}
-
         {errorMsg && (
           <div className="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
@@ -258,7 +211,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
         )}
 
         {/* Form Fields */}
-        <form onSubmit={handleSubmit} className="mt-3 space-y-3 text-xs">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3 text-xs">
           {mode === 'register' && (
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
@@ -269,7 +222,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: Budi Santoso"
+                  placeholder={role === 'owner' ? 'Contoh: Fajri Sani' : 'Contoh: Budi Santoso'}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
