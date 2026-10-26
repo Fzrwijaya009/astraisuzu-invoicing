@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Invoice } from '../types';
 import { formatIDR } from '../utils/billing';
 import { printInvoiceDocument } from '../utils/printInvoice';
+import { exportInvoiceToExcel } from '../utils/exportInvoiceExcel';
 import {
   X,
   Printer,
@@ -12,6 +13,7 @@ import {
   Download,
   Building,
   CheckCheck,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface InvoiceDetailModalProps {
@@ -57,12 +59,23 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             <span>Lembar Resmi Faktur / Tagihan Vendor Aksesoris</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Download to Excel Button */}
+            <button
+              type="button"
+              onClick={() => exportInvoiceToExcel(invoice)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition cursor-pointer"
+              title="Download seluruh rincian transaksi dan baris Good Receipt ke file Excel (.xlsx)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Download to Excel</span>
+            </button>
+
             {/* Prominent Google Print / Cetak PDF Button */}
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition cursor-pointer"
               title="Cetak langsung menggunakan dialog cetak Google / browser atau Simpan PDF"
             >
               <Printer className="w-4 h-4" />
@@ -280,7 +293,16 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
           </div>
 
           {/* Modal Bottom Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 print:hidden">
+          <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-200 print:hidden">
+            <button
+              type="button"
+              onClick={() => exportInvoiceToExcel(invoice)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+              title="Download seluruh rincian transaksi dan baris Good Receipt ke file Excel (.xlsx)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Download to Excel</span>
+            </button>
             <button
               type="button"
               onClick={handlePrint}

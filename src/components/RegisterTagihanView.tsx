@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Invoice, InvoiceItem } from '../types';
 import { formatIDR } from '../utils/billing';
 import { printInvoiceDocument } from '../utils/printInvoice';
+import { exportInvoiceToExcel } from '../utils/exportInvoiceExcel';
 import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 import {
@@ -24,6 +25,7 @@ import {
   X,
   Printer,
   CalendarDays,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface RegisterTagihanViewProps {
@@ -611,6 +613,17 @@ export const RegisterTagihanView: React.FC<RegisterTagihanViewProps> = ({
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>Rincian</span>
+                          </button>
+
+                          {/* Quick Download Excel Button */}
+                          <button
+                            type="button"
+                            onClick={() => exportInvoiceToExcel(inv)}
+                            className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center gap-1 transition cursor-pointer border border-emerald-200"
+                            title="Download rincian tagihan ke file Excel (.xlsx)"
+                          >
+                            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Excel</span>
                           </button>
 
                           {/* MASTER SYSTEM OWNER ACTIONS */}
